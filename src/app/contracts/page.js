@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react'
 import FileUploader from '@/components/fileuploader'
 import ReportViewer from '@/components/reportviewer'
