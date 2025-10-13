@@ -56,7 +56,15 @@ export default function FileUploader({ onCompareComplete }) {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || `Server error: ${response.status}`)
+        
+        // Handle rate limit error (429)
+        if (response.status === 429) {
+          const detail = errorData.detail || errorData
+          const message = detail.message || 'Monthly comparison limit reached'
+          throw new Error(`${message} Upgrade to Pro for unlimited comparisons.`)
+        }
+        
+        throw new Error(errorData.error || errorData.detail || `Server error: ${response.status}`)
       }
 
       const data = await response.json()
@@ -204,4 +212,4 @@ export default function FileUploader({ onCompareComplete }) {
       </form>
     </div>
   )
-                }
+              }
