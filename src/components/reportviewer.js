@@ -36,7 +36,7 @@ export default function ReportViewer({ report }) {
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Comparison Report</h2>
           <p className="text-sm text-gray-500 mt-1">
-            Report ID: {report.reportId} | Generated: {new Date(report.createdAt).toLocaleString()}
+            Report ID: {report.reportId} | Generated: {new Date(report.createdAt || report.metadata?.createdAt).toLocaleString()}
           </p>
         </div>
         <button
@@ -46,6 +46,43 @@ export default function ReportViewer({ report }) {
           Export PDF
         </button>
       </div>
+
+      {/* Usage Indicator */}
+      {report.usage && (
+        <div className={`mb-6 p-4 rounded-lg border ${
+          report.usage.remaining <= 2 ? 'bg-red-50 border-red-200' : 
+          report.usage.remaining <= 5 ? 'bg-yellow-50 border-yellow-200' : 
+          'bg-blue-50 border-blue-200'
+        }`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">
+                Monthly Usage: {report.usage.used} / {report.usage.limit}
+              </p>
+              <p className="text-xs text-gray-600 mt-1">
+                {report.usage.remaining} comparison{report.usage.remaining !== 1 ? 's' : ''} remaining this month
+              </p>
+            </div>
+            {report.usage.remaining <= 2 && (
+              <Link
+                href="/pricing"
+                className="text-xs bg-primary-600 text-white px-3 py-1 rounded font-medium hover:bg-primary-700"
+              >
+                Upgrade
+              </Link>
+            )}
+          </div>
+          <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+            <div
+              className={`h-2 rounded-full transition-all ${
+                report.usage.remaining <= 2 ? 'bg-red-500' :
+                report.usage.remaining <= 5 ? 'bg-yellow-500' : 'bg-blue-500'
+              }`}
+              style={{ width: `${(report.usage.used / report.usage.limit) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Risk Score */}
       <div className="bg-gray-50 rounded-lg p-6 mb-8">
@@ -187,4 +224,4 @@ export default function ReportViewer({ report }) {
       </div>
     </div>
   )
-              }
+                           }
