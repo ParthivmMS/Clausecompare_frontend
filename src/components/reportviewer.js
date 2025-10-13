@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 export default function ReportViewer({ report }) {
   if (!report) {
     return null
@@ -224,4 +226,4 @@ export default function ReportViewer({ report }) {
       </div>
     </div>
   )
-                           }
+}
