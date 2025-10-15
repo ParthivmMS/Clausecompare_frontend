@@ -1,4 +1,6 @@
 import { AuthProvider } from '@/contexts/AuthContext'
+import Navigation from '@/components/Navigation'
+import Footer from '@/components/Footer'
 import './globals.css'
 
 export const metadata = {
@@ -9,9 +11,13 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>
+      <body className="min-h-screen flex flex-col">
         <AuthProvider>
-          {children}
+          <Navigation />
+          <main className="flex-grow">
+            {children}
+          </main>
+          <Footer />
         </AuthProvider>
       </body>
     </html>
