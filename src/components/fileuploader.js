@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext' // NEW: Import auth
 
 export default function FileUploader({ onCompareComplete }) {
+  const { user } = useAuth() // NEW: Get user from auth context
   const [fileA, setFileA] = useState(null)
   const [fileB, setFileB] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -34,6 +36,16 @@ export default function FileUploader({ onCompareComplete }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
+    // NEW: Check authentication
+    const token = localStorage.getItem('token')
+    if (!token) {
+      setError('Please login to compare contracts')
+      setTimeout(() => {
+        window.location.href = '/login'
+      }, 2000)
+      return
+    }
+    
     if (!fileA || !fileB) {
       setError('Please select both files')
       return
@@ -47,23 +59,39 @@ export default function FileUploader({ onCompareComplete }) {
       formData.append('fileA', fileA)
       formData.append('fileB', fileB)
       formData.append('use_llm', useLLM ? 'true' : 'false')
+      formData.append('use_ai_full', 'true') // NEW: Enable AI by default
 
-      const response = await fetch('/api/compare', {
+      // CHANGED: Call backend directly instead of /api/compare proxy
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/compare`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}` // NEW: Add auth token
+        },
         body: formData,
-        credentials: 'include',
       })
+
+      // NEW: Handle 401 (token expired)
+      if (response.status === 401) {
+        localStorage.removeItem('token')
+        setError('Session expired. Please login again.')
+        setTimeout(() => {
+          window.location.href = '/login'
+        }, 2000)
+        return
+      }
+
+      // Handle rate limit error (429)
+      if (response.status === 429) {
+        const errorData = await response.json()
+        const detail = errorData.detail || errorData
+        const message = detail.message || 'Monthly comparison limit reached'
+        setError(`${message} Upgrade to Pro for unlimited comparisons.`)
+        setIsLoading(false)
+        return
+      }
 
       if (!response.ok) {
         const errorData = await response.json()
-        
-        // Handle rate limit error (429)
-        if (response.status === 429) {
-          const detail = errorData.detail || errorData
-          const message = detail.message || 'Monthly comparison limit reached'
-          throw new Error(`${message} Upgrade to Pro for unlimited comparisons.`)
-        }
-        
         throw new Error(errorData.error || errorData.detail || `Server error: ${response.status}`)
       }
 
@@ -72,6 +100,10 @@ export default function FileUploader({ onCompareComplete }) {
       if (onCompareComplete) {
         onCompareComplete(data)
       }
+      
+      // Reset files after successful comparison
+      setFileA(null)
+      setFileB(null)
       
     } catch (err) {
       console.error('Comparison error:', err)
@@ -99,7 +131,16 @@ export default function FileUploader({ onCompareComplete }) {
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-8">
-      <h2 className="text-2xl font-bold mb-6 text-gray-900">Compare Contracts</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">Compare Contracts</h2>
+        
+        {/* NEW: Show usage info */}
+        {user && (
+          <div className="text-sm text-gray-600">
+            <span className="font-semibold">{user.comparisons_used || 0}</span> / {user.comparisons_limit || 10} used this month
+          </div>
+        )}
+      </div>
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid md:grid-cols-2 gap-6">
@@ -111,7 +152,7 @@ export default function FileUploader({ onCompareComplete }) {
             <div
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, setFileA)}
-              className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-500 transition cursor-pointer"
+              className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition cursor-pointer"
             >
               <input
                 type="file"
@@ -142,7 +183,7 @@ export default function FileUploader({ onCompareComplete }) {
             <div
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, setFileB)}
-              className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-500 transition cursor-pointer"
+              className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition cursor-pointer"
             >
               <input
                 type="file"
@@ -166,17 +207,17 @@ export default function FileUploader({ onCompareComplete }) {
           </div>
         </div>
 
-        {/* LLM Toggle */}
+        {/* LLM Toggle - UPDATED description */}
         <div className="flex items-center space-x-3">
           <input
             type="checkbox"
             id="useLLM"
             checked={useLLM}
             onChange={(e) => setUseLLM(e.target.checked)}
-            className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
           />
           <label htmlFor="useLLM" className="text-sm text-gray-700">
-            Use AI-powered explanations (may take longer)
+            Enhanced AI explanations (recommended, may take 10-15 seconds)
           </label>
         </div>
 
@@ -191,7 +232,7 @@ export default function FileUploader({ onCompareComplete }) {
         <button
           type="submit"
           disabled={isLoading || !fileA || !fileB}
-          className="w-full bg-primary-600 text-white py-3 rounded-lg font-semibold hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+          className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
         >
           {isLoading ? (
             <span className="flex items-center justify-center">
@@ -207,9 +248,9 @@ export default function FileUploader({ onCompareComplete }) {
         </button>
 
         <p className="text-xs text-gray-500 text-center">
-          Your files are processed securely and deleted within 24 hours
+          🔒 Your files are processed securely and deleted within 24 hours. We never use your contracts for AI training.
         </p>
       </form>
     </div>
   )
-              }
+}
