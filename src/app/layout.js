@@ -1,6 +1,6 @@
 import { AuthProvider } from '@/contexts/AuthContext'
-import Navigation from '@/components/Navigation'
-import Footer from '@/components/Footer'
+import Navigation from '@/components/navigation'
+import Footer from '@/components/footer'
 import './globals.css'
 
 export const metadata = {
