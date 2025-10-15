@@ -2,44 +2,75 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function Navigation() {
   const pathname = usePathname()
-  
-  const isActive = (path) => {
-    return pathname === path ? 'text-primary-600 border-b-2 border-primary-600' : 'text-gray-600 hover:text-gray-900'
-  }
+  const { user, logout } = useAuth()
+
+  const navLinks = [
+    { href: '/dashboard', label: 'Dashboard', auth: true },
+    { href: '/contracts', label: 'Compare', auth: true },
+    { href: '/profile', label: 'Profile', auth: true },
+  ]
 
   return (
-    <nav className="bg-white shadow-sm border-b">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          <Link href="/" className="text-2xl font-bold text-primary-600">
-            ClauseCompare
-          </Link>
-          
-          <div className="flex items-center space-x-8">
-            <Link href="/dashboard" className={`${isActive('/dashboard')} font-medium transition pb-1`}>
-              Dashboard
+    <nav className="bg-white shadow-sm border-b border-gray-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex items-center">
+            <Link href="/" className="text-xl font-bold text-blue-600">
+              ClauseCompare
             </Link>
-            <Link href="/contracts" className={`${isActive('/contracts')} font-medium transition pb-1`}>
-              Compare
-            </Link>
-            <Link href="/profile" className={`${isActive('/profile')} font-medium transition pb-1`}>
-              Profile
-            </Link>
+            
+            {user && (
+              <div className="hidden md:flex ml-10 space-x-8">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                      pathname === link.href
+                        ? 'border-blue-500 text-gray-900'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
-          
+
           <div className="flex items-center space-x-4">
-            <Link href="/login" className="text-gray-600 hover:text-gray-900 font-medium">
-              Log In
-            </Link>
-            <Link 
-              href="/signup" 
-              className="bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 transition"
-            >
-              Sign Up
-            </Link>
+            {user ? (
+              <>
+                <span className="text-sm text-gray-600 hidden md:block">
+                  {user.email}
+                </span>
+                <button
+                  onClick={logout}
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                >
+                  Log Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                >
+                  Log In
+                </Link>
+                <Link
+                  href="/signup"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
