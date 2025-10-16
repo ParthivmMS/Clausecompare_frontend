@@ -1,323 +1,385 @@
 'use client'
 
-import Link from 'next/link'
 import { useState } from 'react'
-import FeedbackModal from './feedbackmodal'
+import { Download, Printer, MessageSquare, FileText, AlertTriangle, CheckCircle, Info } from 'lucide-react'
 
 export default function ReportViewer({ report }) {
   const [showFeedback, setShowFeedback] = useState(false)
-  
-  if (!report) {
-    return null
+  const [feedback, setFeedback] = useState({
+    overallRating: 0,
+    accuracyRating: 0,
+    comments: ''
+  })
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
+
+  // Calculate risk color
+  const getRiskColor = (score) => {
+    if (score >= 70) return 'text-red-600 bg-red-50 border-red-200'
+    if (score >= 40) return 'text-orange-600 bg-orange-50 border-orange-200'
+    return 'text-green-600 bg-green-50 border-green-200'
   }
 
-  // Fix date formatting
-  const getFormattedDate = () => {
-    const date = report.createdAt || report.metadata?.createdAt
-    if (!date) return new Date().toLocaleString('en-IN', { hour12: false })
-    
+  const getSeverityBadge = (severity) => {
+    const badges = {
+      'High': '🔴 High Risk',
+      'Medium': '🟡 Medium Risk',
+      'Low': '🟢 Low Risk'
+    }
+    return badges[severity] || severity
+  }
+
+  // Download PDF
+  const handleDownloadPDF = async () => {
     try {
-      return new Date(date).toLocaleString('en-IN', { 
-        hour12: false,
+      const token = localStorage.getItem('token')
+      if (!token) {
+        alert('Please login to download reports')
+        return
+      }
+
+      const reportId = report.reportId
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reports/${reportId}/pdf`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (res.ok) {
+        const blob = await res.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `clausecompare-${reportId}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+      } else {
+        alert('Failed to download PDF. Please try again.')
+      }
+    } catch (error) {
+      console.error('Download failed:', error)
+      alert('Failed to download PDF. Please try again.')
+    }
+  }
+
+  // Print Report
+  const handlePrint = () => {
+    window.print()
+  }
+
+  // Export as JSON
+  const handleExportJSON = () => {
+    const dataStr = JSON.stringify(report, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = window.URL.createObjectURL(dataBlob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `clausecompare-${report.reportId}.json`
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+  }
+
+  // Submit Feedback
+  const handleSubmitFeedback = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        alert('Please login to submit feedback')
+        return
+      }
+
+      // For now, just show success (you can add backend endpoint later)
+      console.log('Feedback submitted:', feedback)
+      setFeedbackSubmitted(true)
+      setTimeout(() => {
+        setShowFeedback(false)
+        setFeedbackSubmitted(false)
+      }, 2000)
+    } catch (error) {
+      console.error('Feedback submission failed:', error)
+      alert('Failed to submit feedback. Please try again.')
+    }
+  }
+
+  // Format date
+  const formatDate = (dateStr) => {
+    try {
+      const date = new Date(dateStr)
+      return date.toLocaleString('en-US', {
         year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
+        month: 'long',
+        day: 'numeric',
         hour: '2-digit',
         minute: '2-digit'
       })
     } catch {
-      return new Date().toLocaleString('en-IN', { hour12: false })
+      return dateStr
     }
-  }
-
-  // Generate summary header
-  const generateSummaryHeader = () => {
-    const diffs = report.diffs || []
-    const highRisk = diffs.filter(d => d.severity === 'High').length
-    const mediumRisk = diffs.filter(d => d.severity === 'Medium').length
-    const lowRisk = diffs.filter(d => d.severity === 'Low').length
-    const totalChanges = diffs.length
-    const riskScore = report.riskScore || 0
-
-    // Get top risky clauses
-    const topRisks = diffs
-      .filter(d => d.severity === 'High')
-      .slice(0, 2)
-      .map(d => d.clause)
-      .join(' and ')
-
-    let summaryText = `ClauseCompare detected ${totalChanges} change${totalChanges !== 1 ? 's' : ''}`
-    
-    if (highRisk > 0 || mediumRisk > 0) {
-      summaryText += ` — ${highRisk} High Risk, ${mediumRisk} Medium Risk`
-    }
-    
-    summaryText += ` — with an overall score of ${riskScore}/100.`
-    
-    if (topRisks) {
-      summaryText += ` The main risks involve ${topRisks}.`
-    }
-
-    return summaryText
-  }
-
-  const getSeverityColor = (severity) => {
-    switch (severity) {
-      case 'High':
-        return 'bg-red-100 text-red-800 border-red-300'
-      case 'Medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300'
-      case 'Low':
-        return 'bg-green-100 text-green-800 border-green-300'
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-300'
-    }
-  }
-
-  const getSeverityEmoji = (severity) => {
-    switch (severity) {
-      case 'High':
-        return '🔴'
-      case 'Medium':
-        return '🟡'
-      case 'Low':
-        return '🟢'
-      default:
-        return '⚪'
-    }
-  }
-
-  const getRiskScoreColor = (score) => {
-    if (score >= 70) return 'text-red-600'
-    if (score >= 40) return 'text-yellow-600'
-    return 'text-green-600'
-  }
-
-  const handleExportPDF = () => {
-    // TODO: Implement PDF export functionality
-    alert('PDF export feature coming soon!')
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-8 mt-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6 pb-6 border-b">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Comparison Report</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Report ID: {report.reportId} | Generated: {getFormattedDate()}
-          </p>
-        </div>
-        <button
-          onClick={handleExportPDF}
-          className="bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 transition"
-        >
-          Export PDF
-        </button>
-      </div>
-
-      {/* Executive Summary Header */}
-      <div className="mb-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
-        <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center">
-          <span className="text-2xl mr-2">📋</span>
-          Executive Summary
-        </h3>
-        <p className="text-gray-700 leading-relaxed">
-          {generateSummaryHeader()}
-        </p>
-      </div>
-
-      {/* Usage Indicator */}
-      {report.usage && (
-        <div className={`mb-6 p-4 rounded-lg border ${
-          report.usage.remaining <= 2 ? 'bg-red-50 border-red-200' : 
-          report.usage.remaining <= 5 ? 'bg-yellow-50 border-yellow-200' : 
-          'bg-blue-50 border-blue-200'
-        }`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-gray-900">
-                Monthly Usage: {report.usage.used} / {report.usage.limit}
-              </p>
-              <p className="text-xs text-gray-600 mt-1">
-                {report.usage.remaining} comparison{report.usage.remaining !== 1 ? 's' : ''} remaining this month
-              </p>
-            </div>
-            {report.usage.remaining <= 2 && (
-              <Link
-                href="/pricing"
-                className="text-xs bg-primary-600 text-white px-3 py-1 rounded font-medium hover:bg-primary-700"
-              >
-                Upgrade
-              </Link>
-            )}
-          </div>
-          <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-            <div
-              className={`h-2 rounded-full transition-all ${
-                report.usage.remaining <= 2 ? 'bg-red-500' :
-                report.usage.remaining <= 5 ? 'bg-yellow-500' : 'bg-blue-500'
-              }`}
-              style={{ width: `${(report.usage.used / report.usage.limit) * 100}%` }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Risk Score */}
-      <div className="bg-gray-50 rounded-lg p-6 mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">Overall Risk Score</h3>
-            <p className="text-sm text-gray-600">
-              Based on {report.diffs.length} detected change{report.diffs.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-          <div className="text-center">
-            <div className={`text-5xl font-bold ${getRiskScoreColor(report.riskScore)}`}>
-              {report.riskScore}
-            </div>
-            <p className="text-sm text-gray-500 mt-1">out of 100</p>
-          </div>
-        </div>
-        
-        {/* Risk Indicator Bar */}
-        <div className="mt-4">
-          <div className="w-full bg-gray-200 rounded-full h-4 flex items-center overflow-hidden" style={{ borderRadius: '10px', height: '16px' }}>
-            <div
-              className={`h-full rounded-full transition-all duration-500 ease-in-out ${
-                report.riskScore >= 70 ? 'bg-red-500' :
-                report.riskScore >= 40 ? 'bg-yellow-500' : 'bg-green-500'
-              }`}
-              style={{ width: `${report.riskScore}%`, borderRadius: '10px' }}
-            />
-          </div>
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>Low Risk</span>
-            <span>Medium Risk</span>
-            <span>High Risk</span>
-          </div>
-        </div>
-      </div>
-
-      {/* File Information */}
-      <div className="mb-8 p-4 bg-blue-50 rounded-lg">
-        <p className="text-sm text-blue-900">
-          <strong>Comparing:</strong> {report.fileA} → {report.fileB}
-        </p>
-        {report.llmUsed && (
-          <p className="text-xs text-blue-700 mt-1">
-            ✨ Enhanced with AI-powered explanations
-          </p>
-        )}
-      </div>
-
-      {/* Diffs List */}
-      <div className="space-y-6">
-        <h3 className="text-xl font-bold text-gray-900">Detected Changes</h3>
-        
-        {report.diffs.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50 rounded-lg">
-            <div className="text-6xl mb-4">✅</div>
-            <h4 className="text-xl font-semibold text-gray-700 mb-2">No Significant Changes</h4>
-            <p className="text-gray-600">The contracts appear to be identical or have only minor formatting differences.</p>
-          </div>
-        ) : (
-          report.diffs.map((diff, index) => (
-            <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
-              {/* Diff Header */}
-              <div className="bg-gray-50 px-6 py-4 flex items-center justify-between">
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900">{diff.clause}</h4>
-                  <p className="text-sm text-gray-600 mt-1">{diff.summary}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium border flex items-center gap-1 ${getSeverityColor(diff.severity)}`}>
-                    <span>{getSeverityEmoji(diff.severity)}</span>
-                    <span>{diff.severity}</span>
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {diff.confidence}% confidence
-                  </span>
-                </div>
-              </div>
-
-              {/* Diff Content */}
-              <div className="p-6">
-                {/* Old vs New Text */}
-                <div className="grid md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <h5 className="text-sm font-semibold text-gray-700 mb-2">Original Version</h5>
-                    <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-gray-800 min-h-24">
-                      {diff.oldText || <span className="text-gray-400 italic">Clause removed</span>}
-                    </div>
-                  </div>
-                  <div>
-                    <h5 className="text-sm font-semibold text-gray-700 mb-2">New Version</h5>
-                    <div className="bg-green-50 border border-green-200 rounded p-3 text-sm text-gray-800 min-h-24">
-                      {diff.newText || <span className="text-gray-400 italic">Clause added</span>}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Explanation */}
-                {diff.explanation && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                    <h5 className="text-sm font-semibold text-blue-900 mb-2">💡 Analysis</h5>
-                    <p className="text-sm text-blue-800">{diff.explanation}</p>
-                  </div>
-                )}
-
-                {/* Suggestions */}
-                {diff.suggestions && diff.suggestions.length > 0 && (
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <h5 className="text-sm font-semibold text-purple-900 mb-2">🎯 Negotiation Suggestions</h5>
-                    <ul className="space-y-2">
-                      {diff.suggestions.map((suggestion, idx) => (
-                        <li key={idx} className="text-sm text-purple-800 flex items-start">
-                          <span className="mr-2">•</span>
-                          <span>{suggestion}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
+    <div className="space-y-6">
       {/* Action Buttons */}
-      <div className="mt-8 pt-6 border-t flex gap-4 justify-between">
-        <button
-          onClick={() => setShowFeedback(true)}
-          className="px-4 py-2 border border-primary-600 text-primary-600 rounded-lg font-medium hover:bg-primary-50 transition"
-        >
-          📝 Give Feedback
-        </button>
-        <div className="flex gap-4">
+      <div className="bg-white rounded-lg shadow-sm p-4 print:hidden">
+        <div className="flex flex-wrap gap-3">
           <button
-            onClick={() => window.print()}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
+            onClick={handleDownloadPDF}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
           >
+            <Download size={18} />
+            Download PDF
+          </button>
+
+          <button
+            onClick={handlePrint}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition"
+          >
+            <Printer size={18} />
             Print Report
           </button>
+
           <button
-            onClick={handleExportPDF}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition"
+            onClick={handleExportJSON}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
           >
-            Download PDF
+            <FileText size={18} />
+            Export JSON
+          </button>
+
+          <button
+            onClick={() => setShowFeedback(!showFeedback)}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+          >
+            <MessageSquare size={18} />
+            Give Feedback
           </button>
         </div>
       </div>
 
       {/* Feedback Modal */}
-      <FeedbackModal 
-        isOpen={showFeedback} 
-        onClose={() => setShowFeedback(false)}
-        reportId={report.reportId}
-      />
+      {showFeedback && (
+        <div className="bg-white rounded-lg shadow-lg p-6 border-2 border-purple-200">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Help Us Improve</h3>
+          
+          {feedbackSubmitted ? (
+            <div className="text-center py-8">
+              <CheckCircle className="mx-auto text-green-600 mb-4" size={48} />
+              <p className="text-green-600 font-semibold">Thank you for your feedback!</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Overall Rating */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Overall Experience
+                </label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => setFeedback({ ...feedback, overallRating: star })}
+                      className={`text-3xl ${
+                        star <= feedback.overallRating ? 'text-yellow-400' : 'text-gray-300'
+                      }`}
+                    >
+                      ⭐
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Accuracy Rating */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Accuracy of Analysis
+                </label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((target) => (
+                    <button
+                      key={target}
+                      onClick={() => setFeedback({ ...feedback, accuracyRating: target })}
+                      className={`text-3xl ${
+                        target <= feedback.accuracyRating ? 'text-green-500' : 'text-gray-300'
+                      }`}
+                    >
+                      🎯
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Comments */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Additional Comments (Optional)
+                </label>
+                <textarea
+                  value={feedback.comments}
+                  onChange={(e) => setFeedback({ ...feedback, comments: e.target.value })}
+                  placeholder="What did you like? What could be improved?"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  rows={4}
+                />
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleSubmitFeedback}
+                  disabled={feedback.overallRating === 0 || feedback.accuracyRating === 0}
+                  className="flex-1 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Submit Feedback
+                </button>
+                <button
+                  onClick={() => setShowFeedback(false)}
+                  className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Report Header */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Comparison Report</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              {formatDate(report.metadata?.createdAt)}
+            </p>
+          </div>
+          <div className={`px-6 py-3 rounded-lg border-2 ${getRiskColor(report.riskScore)}`}>
+            <p className="text-sm font-semibold">Risk Score</p>
+            <p className="text-3xl font-bold">{report.riskScore}/100</p>
+          </div>
+        </div>
+
+        {/* File Names */}
+        <div className="grid md:grid-cols-2 gap-4 mt-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+            <p className="text-xs text-red-600 font-semibold mb-1">ORIGINAL</p>
+            <p className="text-sm text-gray-800">{report.metadata?.fileA}</p>
+          </div>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+            <p className="text-xs text-green-600 font-semibold mb-1">MODIFIED</p>
+            <p className="text-sm text-gray-800">{report.metadata?.fileB}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Executive Summary */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <h3 className="text-xl font-bold text-gray-900 mb-4">Executive Summary</h3>
+        <p className="text-gray-700 leading-relaxed">{report.summary}</p>
+      </div>
+
+      {/* Verdict */}
+      {report.verdict && (
+        <div className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-lg">
+          <h3 className="text-lg font-bold text-blue-900 mb-2">Verdict</h3>
+          <p className="text-blue-800">{report.verdict}</p>
+        </div>
+      )}
+
+      {/* Risk Report */}
+      {report.riskReport && (
+        <div className="bg-orange-50 border-l-4 border-orange-500 p-6 rounded-r-lg">
+          <h3 className="text-lg font-bold text-orange-900 mb-2">Risk Analysis</h3>
+          <p className="text-orange-800">{report.riskReport}</p>
+        </div>
+      )}
+
+      {/* Usage Stats */}
+      {report.usage && (
+        <div className="bg-gray-50 rounded-lg p-4">
+          <p className="text-sm text-gray-600">
+            📊 You've used <span className="font-bold">{report.usage.used}</span> of{' '}
+            <span className="font-bold">{report.usage.limit}</span> comparisons this month
+            {report.usage.remaining <= 3 && (
+              <span className="ml-2 text-orange-600 font-semibold">
+                ({report.usage.remaining} remaining)
+              </span>
+            )}
+          </p>
+        </div>
+      )}
+
+      {/* Detailed Changes */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <h3 className="text-xl font-bold text-gray-900 mb-6">
+          Detailed Analysis ({report.diffs?.length || 0} changes)
+        </h3>
+
+        <div className="space-y-6">
+          {report.diffs?.map((diff, index) => (
+            <div key={index} className="border-l-4 border-gray-300 pl-4">
+              {/* Clause Header */}
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <h4 className="font-bold text-gray-900 text-lg">
+                    {diff.clause}
+                  </h4>
+                  <span className="inline-block mt-1 px-2 py-1 text-xs font-semibold bg-gray-200 text-gray-800 rounded">
+                    {diff.type}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-2xl">{getSeverityBadge(diff.severity)}</span>
+                  {diff.confidence && (
+                    <p className="text-xs text-gray-500 mt-1">{diff.confidence}% confidence</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
+                <p className="text-sm text-yellow-900 font-semibold mb-1">Summary:</p>
+                <p className="text-sm text-yellow-800">{diff.summary}</p>
+              </div>
+
+              {/* Explanation */}
+              {diff.explanation && (
+                <div className="mb-3">
+                  <p className="text-sm font-semibold text-gray-700 mb-1">Analysis:</p>
+                  <p className="text-sm text-gray-600">{diff.explanation}</p>
+                </div>
+              )}
+
+              {/* Suggestions */}
+              {diff.suggestions && diff.suggestions.length > 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <p className="text-sm font-semibold text-green-900 mb-2">
+                    💡 Negotiation Suggestions:
+                  </p>
+                  <ul className="space-y-1">
+                    {diff.suggestions.map((suggestion, idx) => (
+                      <li key={idx} className="text-sm text-green-800">
+                        • {suggestion}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Footer Info */}
+      <div className="bg-gray-50 rounded-lg p-4 text-center text-sm text-gray-600 print:block">
+        <p>Report ID: {report.reportId}</p>
+        <p className="mt-1">Generated using {report.metadata?.comparisonMethod}</p>
+        <p className="mt-2 text-xs">
+          🔒 This report is confidential. Your contracts are deleted within 24 hours.
+        </p>
+      </div>
     </div>
   )
-            }
+        }
