@@ -93,7 +93,6 @@ export default function ReportViewer({ report }) {
     return 'text-green-600'
   }
 
-  // UPDATED: Real PDF download function
   const handleExportPDF = async () => {
     try {
       const token = localStorage.getItem('token')
@@ -350,4 +349,4 @@ export default function ReportViewer({ report }) {
       />
     </div>
   )
-          }
+                }
