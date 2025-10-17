@@ -47,7 +47,6 @@ export default function ReportViewer({ report }) {
     const totalChanges = diffs.length
     const riskScore = report.riskScore || 0
 
-    // Get top risky clauses
     const topRisks = diffs
       .filter(d => d.severity === 'High')
       .slice(0, 2)
@@ -103,7 +102,6 @@ export default function ReportViewer({ report }) {
 
   // PDF EXPORT - WITH FEATURE LOCK
   const handleExportPDF = async () => {
-    // CHECK PLAN FIRST
     if (userPlan === 'free') {
       if (confirm('📄 PDF export is only available for Pro users.\n\n✨ Upgrade now for:\n• Unlimited comparisons\n• PDF export\n• AI explanations\n\nGo to pricing page?')) {
         window.location.href = '/pricing'
@@ -150,6 +148,17 @@ export default function ReportViewer({ report }) {
     }
   }
 
+  // PRINT REPORT - WITH FEATURE LOCK (CHANGED)
+  const handlePrint = () => {
+    if (userPlan === 'free') {
+      if (confirm('🖨️ Print/PDF export is only available for Pro users.\n\n✨ Upgrade now for unlimited access!\n\nGo to pricing page?')) {
+        window.location.href = '/pricing'
+      }
+    } else {
+      window.print()
+    }
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-lg p-8 mt-8">
       {/* Header */}
@@ -189,7 +198,7 @@ export default function ReportViewer({ report }) {
                 You're on the Free plan - Some features are limited
               </p>
               <p className="text-sm text-yellow-800 mt-1">
-                PDF export and advanced AI insights require Pro plan. <Link href="/pricing" className="underline font-bold hover:text-yellow-900">Upgrade now →</Link>
+                PDF export and print require Pro plan. <Link href="/pricing" className="underline font-bold hover:text-yellow-900">Upgrade now →</Link>
               </p>
             </div>
           </div>
@@ -261,7 +270,6 @@ export default function ReportViewer({ report }) {
           </div>
         </div>
         
-        {/* Risk Indicator Bar */}
         <div className="mt-4">
           <div className="w-full bg-gray-200 rounded-full h-4 flex items-center overflow-hidden" style={{ borderRadius: '10px', height: '16px' }}>
             <div
@@ -305,7 +313,6 @@ export default function ReportViewer({ report }) {
         ) : (
           report.diffs.map((diff, index) => (
             <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
-              {/* Diff Header */}
               <div className="bg-gray-50 px-6 py-4 flex items-center justify-between">
                 <div>
                   <h4 className="text-lg font-semibold text-gray-900">{diff.clause}</h4>
@@ -322,9 +329,7 @@ export default function ReportViewer({ report }) {
                 </div>
               </div>
 
-              {/* Diff Content */}
               <div className="p-6">
-                {/* Old vs New Text */}
                 <div className="grid md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <h5 className="text-sm font-semibold text-gray-700 mb-2">Original Version</h5>
@@ -340,7 +345,6 @@ export default function ReportViewer({ report }) {
                   </div>
                 </div>
 
-                {/* Explanation */}
                 {diff.explanation && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                     <h5 className="text-sm font-semibold text-blue-900 mb-2">💡 Analysis</h5>
@@ -348,7 +352,6 @@ export default function ReportViewer({ report }) {
                   </div>
                 )}
 
-                {/* Suggestions */}
                 {diff.suggestions && diff.suggestions.length > 0 && (
                   <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                     <h5 className="text-sm font-semibold text-purple-900 mb-2">🎯 Negotiation Suggestions</h5>
@@ -368,7 +371,7 @@ export default function ReportViewer({ report }) {
         )}
       </div>
 
-      {/* Action Buttons */}
+      {/* Action Buttons - BOTH BUTTONS NOW LOCKED FOR FREE USERS */}
       <div className="mt-8 pt-6 border-t flex gap-4 justify-between">
         <button
           onClick={() => setShowFeedback(true)}
@@ -378,10 +381,14 @@ export default function ReportViewer({ report }) {
         </button>
         <div className="flex gap-4">
           <button
-            onClick={() => window.print()}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
+            onClick={handlePrint}
+            className={`px-4 py-2 border rounded-lg font-medium transition ${
+              userPlan === 'free'
+                ? 'border-gray-300 text-gray-600 bg-gray-100 cursor-not-allowed'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+            }`}
           >
-            Print Report
+            Print Report {userPlan === 'free' && '🔒'}
           </button>
           <button
             onClick={handleExportPDF}
@@ -396,7 +403,6 @@ export default function ReportViewer({ report }) {
         </div>
       </div>
 
-      {/* Feedback Modal */}
       <FeedbackModal 
         isOpen={showFeedback} 
         onClose={() => setShowFeedback(false)}
@@ -404,4 +410,4 @@ export default function ReportViewer({ report }) {
       />
     </div>
   )
-}
+        }
