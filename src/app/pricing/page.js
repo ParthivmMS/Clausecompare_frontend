@@ -18,7 +18,7 @@ export default function PricingPage() {
       iconColor: 'text-gray-600',
       popular: false,
       features: [
-        { text: '3 contract comparisons per month', included: true },
+        { text: '10 contract comparisons per month', included: true },
         { text: 'Basic clause-level difference view', included: true },
         { text: 'Risk scoring', included: true },
         { text: 'Email support (48hr)', included: true },
