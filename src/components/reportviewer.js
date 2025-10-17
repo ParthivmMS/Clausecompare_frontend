@@ -1,12 +1,20 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import FeedbackModal from './feedbackmodal'
 
 export default function ReportViewer({ report }) {
   const [showFeedback, setShowFeedback] = useState(false)
+  const [userPlan, setUserPlan] = useState('free')
   
+  useEffect(() => {
+    // Get user plan from localStorage
+    if (typeof window !== 'undefined') {
+      setUserPlan(localStorage.getItem('userPlan') || 'free')
+    }
+  }, [])
+
   if (!report) {
     return null
   }
@@ -93,49 +101,55 @@ export default function ReportViewer({ report }) {
     return 'text-green-600'
   }
 
+  // PDF EXPORT - WITH FEATURE LOCK
   const handleExportPDF = async () => {
-  // CHECK PLAN FIRST
-  const userPlan = localStorage.getItem('userPlan') // We'll set this on login
-  
-  if (userPlan === 'free') {
-    if (confirm('PDF export is only available for Pro users. Upgrade now?')) {
-      window.location.href = '/pricing'
-    }
-    return
-  }
-
-  try {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      alert('Please login to download PDF')
+    // CHECK PLAN FIRST
+    if (userPlan === 'free') {
+      if (confirm('📄 PDF export is only available for Pro users.\n\n✨ Upgrade now for:\n• Unlimited comparisons\n• PDF export\n• AI explanations\n\nGo to pricing page?')) {
+        window.location.href = '/pricing'
+      }
       return
     }
 
-    const reportId = report.reportId
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reports/${reportId}/pdf`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        alert('Please login to download PDF')
+        return
       }
-    })
 
-    if (res.ok) {
-      const blob = await res.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `clausecompare-${reportId}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-    } else {
+      const reportId = report.reportId
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reports/${reportId}/pdf`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (res.status === 403) {
+        alert('PDF export is only available for Pro users. Please upgrade.')
+        window.location.href = '/pricing'
+        return
+      }
+
+      if (res.ok) {
+        const blob = await res.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `clausecompare-${reportId}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+      } else {
+        alert('Failed to download PDF. Please try again.')
+      }
+    } catch (error) {
+      console.error('Download failed:', error)
       alert('Failed to download PDF. Please try again.')
     }
-  } catch (error) {
-    console.error('Download failed:', error)
-    alert('Failed to download PDF. Please try again.')
   }
-  }
+
   return (
     <div className="bg-white rounded-lg shadow-lg p-8 mt-8">
       {/* Header */}
@@ -148,11 +162,39 @@ export default function ReportViewer({ report }) {
         </div>
         <button
           onClick={handleExportPDF}
-          className="bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 transition"
+          className={`px-4 py-2 rounded-lg font-medium transition ${
+            userPlan === 'free'
+              ? 'bg-gray-300 text-gray-600 cursor-not-allowed relative group'
+              : 'bg-primary-600 text-white hover:bg-primary-700'
+          }`}
         >
-          Export PDF
+          {userPlan === 'free' && (
+            <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap">
+              Pro feature 🔒
+            </span>
+          )}
+          Export PDF {userPlan === 'free' && '🔒'}
         </button>
       </div>
+
+      {/* Feature Lock Notice for Free Users */}
+      {userPlan === 'free' && (
+        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-500 p-4 mb-6 rounded-r-lg">
+          <div className="flex items-start">
+            <svg className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
+            </svg>
+            <div className="ml-3">
+              <p className="text-sm font-semibold text-yellow-900">
+                You're on the Free plan - Some features are limited
+              </p>
+              <p className="text-sm text-yellow-800 mt-1">
+                PDF export and advanced AI insights require Pro plan. <Link href="/pricing" className="underline font-bold hover:text-yellow-900">Upgrade now →</Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Executive Summary Header */}
       <div className="mb-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
@@ -181,7 +223,7 @@ export default function ReportViewer({ report }) {
                 {report.usage.remaining} comparison{report.usage.remaining !== 1 ? 's' : ''} remaining this month
               </p>
             </div>
-            {report.usage.remaining <= 2 && (
+            {report.usage.remaining <= 2 && userPlan === 'free' && (
               <Link
                 href="/pricing"
                 className="text-xs bg-primary-600 text-white px-3 py-1 rounded font-medium hover:bg-primary-700"
@@ -343,9 +385,13 @@ export default function ReportViewer({ report }) {
           </button>
           <button
             onClick={handleExportPDF}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition"
+            className={`px-4 py-2 rounded-lg font-medium transition ${
+              userPlan === 'free'
+                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                : 'bg-primary-600 text-white hover:bg-primary-700'
+            }`}
           >
-            Download PDF
+            Download PDF {userPlan === 'free' && '🔒'}
           </button>
         </div>
       </div>
