@@ -44,45 +44,47 @@ export function AuthProvider({ children }) {
   }
 
   async function signup(email, password) {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/signup`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
 
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || 'Signup failed');
-    }
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.detail || 'Signup failed');
+  }
 
-    const data = await res.json();
-    localStorage.setItem('token', data.token);
-    setUser(data.user);
-    router.push('/contracts');
+  const data = await res.json();
+  localStorage.setItem('token', data.token);
+  localStorage.setItem('userPlan', data.user.plan); // ADD THIS
+  setUser(data.user);
+  router.push('/contracts');
   }
 
   async function login(email, password) {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
 
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || 'Login failed');
-    }
-
-    const data = await res.json();
-    localStorage.setItem('token', data.token);
-    setUser(data.user);
-    router.push('/contracts');
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.detail || 'Login failed');
   }
 
+  const data = await res.json();
+  localStorage.setItem('token', data.token);
+  localStorage.setItem('userPlan', data.user.plan); // ADD THIS
+  setUser(data.user);
+  router.push('/contracts');
+  }
   function logout() {
-    localStorage.removeItem('token');
-    setUser(null);
-    router.push('/');
+  localStorage.removeItem('token');
+  localStorage.removeItem('userPlan'); // ADD THIS
+  setUser(null);
+  router.push('/');
   }
 
   return (
