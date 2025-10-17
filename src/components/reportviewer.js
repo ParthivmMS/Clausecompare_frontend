@@ -94,39 +94,48 @@ export default function ReportViewer({ report }) {
   }
 
   const handleExportPDF = async () => {
-    try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        alert('Please login to download PDF')
-        return
-      }
-
-      const reportId = report.reportId
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reports/${reportId}/pdf`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (res.ok) {
-        const blob = await res.blob()
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `clausecompare-${reportId}.pdf`
-        document.body.appendChild(a)
-        a.click()
-        window.URL.revokeObjectURL(url)
-        document.body.removeChild(a)
-      } else {
-        alert('Failed to download PDF. Please try again.')
-      }
-    } catch (error) {
-      console.error('Download failed:', error)
-      alert('Failed to download PDF. Please try again.')
+  // CHECK PLAN FIRST
+  const userPlan = localStorage.getItem('userPlan') // We'll set this on login
+  
+  if (userPlan === 'free') {
+    if (confirm('PDF export is only available for Pro users. Upgrade now?')) {
+      window.location.href = '/pricing'
     }
+    return
   }
 
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      alert('Please login to download PDF')
+      return
+    }
+
+    const reportId = report.reportId
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reports/${reportId}/pdf`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+
+    if (res.ok) {
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `clausecompare-${reportId}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } else {
+      alert('Failed to download PDF. Please try again.')
+    }
+  } catch (error) {
+    console.error('Download failed:', error)
+    alert('Failed to download PDF. Please try again.')
+  }
+  }
   return (
     <div className="bg-white rounded-lg shadow-lg p-8 mt-8">
       {/* Header */}
