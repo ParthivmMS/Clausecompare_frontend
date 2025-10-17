@@ -158,21 +158,30 @@ function DashboardContent() {
         </div>
 
         {/* Usage Warning */}
-        {isPlanUpgradeNeeded && user?.plan === 'free' && (
-          <div className="bg-orange-50 border-l-4 border-orange-500 p-4 mb-6">
-            <div className="flex items-start">
-              <AlertCircle className="text-orange-600 mt-0.5 mr-3" size={20} />
-              <div>
-                <p className="font-semibold text-orange-900">
-                  You've used {user.comparisons_used} of {user.comparisons_limit} comparisons
-                </p>
-                <p className="text-sm text-orange-800 mt-1">
-                  Upgrade to Pro for unlimited comparisons. <Link href="/pricing" className="underline font-semibold">View Plans →</Link>
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Upgrade Banner for Free Users */}
+{user?.plan === 'free' && (
+  <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-lg p-6 mb-8 text-white">
+    <div className="flex items-center justify-between">
+      <div>
+        <h3 className="text-xl font-bold mb-2">🚀 Unlock Unlimited Comparisons</h3>
+        <p className="text-blue-100 mb-2">
+          Upgrade to Pro for unlimited comparisons, PDF export, and AI-powered insights
+        </p>
+        <ul className="text-sm text-blue-100 space-y-1">
+          <li>✅ Unlimited monthly comparisons</li>
+          <li>✅ PDF export with your branding</li>
+          <li>✅ Advanced AI explanations</li>
+        </ul>
+      </div>
+      <Link
+        href="/pricing"
+        className="px-6 py-3 bg-white text-blue-600 font-bold rounded-lg hover:bg-blue-50 transition whitespace-nowrap"
+      >
+        Upgrade Now
+      </Link>
+    </div>
+  </div>
+)}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
