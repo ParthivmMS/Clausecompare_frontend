@@ -69,10 +69,11 @@ export default function Home() {
           </Link>
         </div>
 
+        {/* UPDATED: Privacy Notice */}
         <div className="mt-16 bg-blue-50 border border-blue-200 rounded-lg p-6">
           <p className="text-sm text-blue-800">
-            🔒 <strong>Privacy First:</strong> Your files are processed securely and deleted within 24 hours. 
-            We never store or share your contract data.
+            🔒 <strong>Privacy First:</strong> Original contract files are deleted within 24 hours. 
+            Your comparison reports are saved to your dashboard—delete them anytime with the "Delete" button.
           </p>
         </div>
       </div>
