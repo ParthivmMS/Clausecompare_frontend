@@ -52,6 +52,24 @@ export default function Home() {
             </p>
           </div>
         </div>
+        {/* ADD THIS NEW BLOG SECTION */}
+        <div className="mt-16 text-center">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            Learn Contract Review Best Practices
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Expert tips and insights for legal professionals
+          </p>
+          <Link 
+            href="/blog"
+            className="inline-block bg-white border-2 border-blue-600 text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
+          >
+            Read Our Blog →
+          </Link>
+        </div>
+        {/* END NEW SECTION */}
+
+        <div className="mt-16 bg-blue-50 border border-blue-200 rounded-lg p-6">
 
         <div className="mt-16 bg-blue-50 border border-blue-200 rounded-lg p-6">
           <p className="text-sm text-blue-800">
