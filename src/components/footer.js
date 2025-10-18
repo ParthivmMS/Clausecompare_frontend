@@ -40,7 +40,10 @@ export default function Footer() {
         
         <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
           <p>© 2025 ClauseCompare. All rights reserved.</p>
-          <p className="mt-2">Files are deleted within 24 hours. Contact us to delete immediately.</p>
+          <p className="mt-2">
+            Original files deleted within 24 hours. 
+            <a href="/privacy" className="text-blue-400 hover:text-blue-300 ml-1">View Privacy Policy</a>
+          </p>
         </div>
       </div>
     </footer>
