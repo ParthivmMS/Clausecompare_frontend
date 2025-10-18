@@ -1,4 +1,4 @@
-import Link from 'next/link'
+Link from 'next/link'
 
 export default function Home() {
   return (
@@ -52,7 +52,8 @@ export default function Home() {
             </p>
           </div>
         </div>
-        {/* ADD THIS NEW BLOG SECTION */}
+
+        {/* Blog Section */}
         <div className="mt-16 text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
             Learn Contract Review Best Practices
@@ -67,9 +68,6 @@ export default function Home() {
             Read Our Blog →
           </Link>
         </div>
-        {/* END NEW SECTION */}
-
-        <div className="mt-16 bg-blue-50 border border-blue-200 rounded-lg p-6">
 
         <div className="mt-16 bg-blue-50 border border-blue-200 rounded-lg p-6">
           <p className="text-sm text-blue-800">
@@ -79,5 +77,3 @@ export default function Home() {
         </div>
       </div>
     </div>
-  )
-              }
