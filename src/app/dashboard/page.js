@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
-import { FileText, TrendingUp, AlertCircle, Clock, Download, Eye } from 'lucide-react'
+import { FileText, TrendingUp, AlertCircle, Clock, Download, Eye, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -144,6 +144,39 @@ function DashboardContent() {
     }
   }
 
+  // NEW: Delete report function
+  async function handleDeleteReport(reportId) {
+    if (!confirm('⚠️ Delete this report permanently?\n\nThis action cannot be undone.')) {
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/reports/${reportId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (res.ok) {
+        // Remove from UI
+        setReports(prevReports => prevReports.filter(r => r.report_id !== reportId))
+        
+        // Update stats
+        const newReports = reports.filter(r => r.report_id !== reportId)
+        calculateStats(newReports)
+        
+        alert('✅ Report deleted successfully')
+      } else {
+        throw new Error('Failed to delete')
+      }
+    } catch (error) {
+      console.error('Delete error:', error)
+      alert('❌ Failed to delete report. Please try again.')
+    }
+  }
+
   const usagePercent = user ? (user.comparisons_used / user.comparisons_limit) * 100 : 0
   const isPlanUpgradeNeeded = usagePercent > 80
 
@@ -157,31 +190,30 @@ function DashboardContent() {
           <p className="text-gray-600 mt-1">Welcome back, {user?.email}</p>
         </div>
 
-        {/* Usage Warning */}
         {/* Upgrade Banner for Free Users */}
-{user?.plan === 'free' && (
-  <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-lg p-6 mb-8 text-white">
-    <div className="flex items-center justify-between">
-      <div>
-        <h3 className="text-xl font-bold mb-2">🚀 Unlock Unlimited Comparisons</h3>
-        <p className="text-blue-100 mb-2">
-          Upgrade to Pro for unlimited comparisons, PDF export, and AI-powered insights
-        </p>
-        <ul className="text-sm text-blue-100 space-y-1">
-          <li>✅ Unlimited monthly comparisons</li>
-          <li>✅ PDF export with your branding</li>
-          <li>✅ Advanced AI explanations</li>
-        </ul>
-      </div>
-      <Link
-        href="/pricing"
-        className="px-6 py-3 bg-white text-blue-600 font-bold rounded-lg hover:bg-blue-50 transition whitespace-nowrap"
-      >
-        Upgrade Now
-      </Link>
-    </div>
-  </div>
-)}
+        {user?.plan === 'free' && (
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-lg p-6 mb-8 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold mb-2">🚀 Unlock Unlimited Comparisons</h3>
+                <p className="text-blue-100 mb-2">
+                  Upgrade to Pro for unlimited comparisons, PDF export, and AI-powered insights
+                </p>
+                <ul className="text-sm text-blue-100 space-y-1">
+                  <li>✅ Unlimited monthly comparisons</li>
+                  <li>✅ PDF export with your branding</li>
+                  <li>✅ Advanced AI explanations</li>
+                </ul>
+              </div>
+              <Link
+                href="/pricing"
+                className="px-6 py-3 bg-white text-blue-600 font-bold rounded-lg hover:bg-blue-50 transition whitespace-nowrap"
+              >
+                Upgrade Now
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -342,6 +374,15 @@ function DashboardContent() {
                             <Download size={14} />
                             PDF
                           </button>
+                          {/* NEW: Delete Button */}
+                          <button
+                            onClick={() => handleDeleteReport(report.report_id)}
+                            className="px-3 py-1 bg-red-50 text-red-600 text-sm rounded hover:bg-red-100 transition flex items-center gap-1"
+                            title="Delete this report permanently"
+                          >
+                            <Trash2 size={14} />
+                            Delete
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -409,4 +450,3 @@ function DashboardContent() {
       </div>
     </div>
   )
-          }
