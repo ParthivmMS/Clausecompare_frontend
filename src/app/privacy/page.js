@@ -190,4 +190,5 @@ export default function PrivacyPage() {
 
       </div>
     </div>
-  )
+  ) 
+}
