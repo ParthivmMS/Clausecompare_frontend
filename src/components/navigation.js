@@ -9,11 +9,11 @@ export default function Navigation() {
   const { user, logout } = useAuth()
 
   const navLinks = [
-  { href: '/dashboard', label: 'Dashboard', auth: true },
-  { href: '/contracts', label: 'Compare', auth: true },
-  { href: '/blog', label: 'Blog', auth: false },  // ← ADD THIS LINE
-  { href: '/profile', label: 'Profile', auth: true },
-]
+    { href: '/dashboard', label: 'Dashboard', auth: true },
+    { href: '/contracts', label: 'Compare', auth: true },
+    { href: '/blog', label: 'Blog', auth: false },
+    { href: '/profile', label: 'Profile', auth: true },
+  ]
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200">
@@ -24,28 +24,28 @@ export default function Navigation() {
               ClauseCompare
             </Link>
             
-            {user && (
-              <div className="hidden md:flex ml-10 space-x-8">
-  {navLinks.map((link) => {
-    // Show blog to everyone, other links only to logged-in users
-    if (!link.auth || user) {
-      return (
-        <Link
-          key={link.href}
-          href={link.href}
-          className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-            pathname === link.href
-              ? 'border-blue-500 text-gray-900'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-          }`}
-        >
-          {link.label}
-        </Link>
-      )
-    }
-    return null
-  })}
-</div>
+            <div className="hidden md:flex ml-10 space-x-8">
+              {navLinks.map((link) => {
+                // Show blog to everyone, other links only to logged-in users
+                if (!link.auth || user) {
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                        pathname === link.href
+                          ? 'border-blue-500 text-gray-900'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  )
+                }
+                return null
+              })}
+            </div>
+          </div>
 
           <div className="flex items-center space-x-4">
             {user ? (
