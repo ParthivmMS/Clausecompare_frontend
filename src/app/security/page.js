@@ -20,13 +20,14 @@ export default function SecurityPage() {
             </p>
 
             <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">Data Protection</h2>
-            <ul className="space-y-3 text-gray-700 mb-6">
-              <li><strong>Encryption in Transit:</strong> All data is encrypted using TLS 1.3</li>
-              <li><strong>Encryption at Rest:</strong> Files are encrypted during processing</li>
-              <li><strong>Automatic Deletion:</strong> Files are deleted within 24 hours</li>
-              <li><strong>No Training Data:</strong> Your contracts are NEVER used to train AI models</li>
-              <li><strong>No Sharing:</strong> We never share your data with third parties</li>
-            </ul>
+<ul className="space-y-3 text-gray-700 mb-6">
+  <li><strong>Encryption in Transit:</strong> All data is encrypted using TLS 1.3</li>
+  <li><strong>Encryption at Rest:</strong> Files are encrypted during processing</li>
+  <li><strong>Automatic Deletion:</strong> Original files are deleted within 24 hours</li>
+  <li><strong>Report Storage:</strong> Comparison reports saved to your dashboard (delete anytime)</li>
+  <li><strong>No Training Data:</strong> Your contracts are NEVER used to train AI models</li>
+  <li><strong>No Sharing:</strong> We never share your data with third parties</li>
+</ul>
 
             <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">Infrastructure</h2>
             <ul className="space-y-3 text-gray-700 mb-6">
