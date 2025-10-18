@@ -18,9 +18,9 @@ export default function HelpPage() {
       answer: "ClauseCompare combines rule-based pattern detection (90% accuracy) with AI semantic analysis (95%+ accuracy) to catch both text changes and meaning shifts."
     },
     {
-      question: "Is my data secure?",
-      answer: "Yes. Your files are processed securely and automatically deleted within 24 hours. We never store, share, or use your contracts for training. See our Privacy Policy for details."
-    },
+  question: "Is my data secure?",
+  answer: "Yes. Original files are processed securely and automatically deleted within 24 hours. Comparison reports are stored in your dashboard until you delete them using the 'Delete' button. We never share your data. See our Privacy Policy for details."
+},
     {
       question: "What's included in the free plan?",
       answer: "Free users get 10 comparisons per month, risk scoring, clause-level analysis, and AI explanations. PDF export and unlimited comparisons require Pro ($29/month)."
