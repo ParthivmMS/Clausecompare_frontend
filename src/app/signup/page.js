@@ -1,9 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { GoogleLogin } from '@react-oauth/google'
 import Link from 'next/link'
 
 export default function SignupPage() {
@@ -14,6 +13,26 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const { signup } = useAuth()
+
+  useEffect(() => {
+    // Load Google Sign-In
+    if (typeof window !== 'undefined' && window.google) {
+      window.google.accounts.id.initialize({
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+        callback: handleGoogleResponse
+      })
+      
+      window.google.accounts.id.renderButton(
+        document.getElementById('googleSignUpButton'),
+        { 
+          theme: 'outline', 
+          size: 'large',
+          width: 384,
+          text: 'signup_with'
+        }
+      )
+    }
+  }, [])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -40,20 +59,20 @@ export default function SignupPage() {
     }
   }
 
-  const handleGoogleSuccess = async (credentialResponse) => {
+  const handleGoogleResponse = async (response) => {
     setError('')
     setLoading(true)
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/google`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential: credentialResponse.credential })
+        body: JSON.stringify({ credential: response.credential })
       })
 
-      const data = await response.json()
+      const data = await res.json()
 
-      if (response.ok) {
+      if (res.ok) {
         localStorage.setItem('token', data.token)
         localStorage.setItem('user', JSON.stringify(data.user))
         router.push('/contracts')
@@ -65,10 +84,6 @@ export default function SignupPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleGoogleError = () => {
-    setError('Google sign up was cancelled or failed')
   }
 
   return (
@@ -84,16 +99,7 @@ export default function SignupPage() {
         )}
 
         {/* Google Sign Up Button */}
-        <div className="mb-6">
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            theme="outline"
-            size="large"
-            width="384"
-            text="signup_with"
-          />
-        </div>
+        <div id="googleSignUpButton" className="mb-6 flex justify-center"></div>
 
         <div className="relative mb-6">
           <div className="absolute inset-0 flex items-center">
