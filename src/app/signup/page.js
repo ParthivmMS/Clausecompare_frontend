@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { GoogleLogin } from '@react-oauth/google'
 import Link from 'next/link'
 
 export default function SignupPage() {
@@ -10,6 +12,7 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const router = useRouter()
   const { signup } = useAuth()
 
   async function handleSubmit(e) {
@@ -37,6 +40,37 @@ export default function SignupPage() {
     }
   }
 
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setError('')
+    setLoading(true)
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: credentialResponse.credential })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        localStorage.setItem('token', data.token)
+        localStorage.setItem('user', JSON.stringify(data.user))
+        router.push('/contracts')
+      } else {
+        setError(data.detail || 'Failed to sign up with Google')
+      }
+    } catch (err) {
+      setError('Failed to sign up with Google. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGoogleError = () => {
+    setError('Google sign up was cancelled or failed')
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
@@ -48,6 +82,27 @@ export default function SignupPage() {
             {error}
           </div>
         )}
+
+        {/* Google Sign Up Button */}
+        <div className="mb-6">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            theme="outline"
+            size="large"
+            width="384"
+            text="signup_with"
+          />
+        </div>
+
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">Or continue with email</span>
+          </div>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -107,6 +162,13 @@ export default function SignupPage() {
           Already have an account?{' '}
           <Link href="/login" className="text-blue-600 hover:underline font-semibold">
             Login
+          </Link>
+        </p>
+
+        <p className="text-center text-xs text-gray-500 mt-4">
+          By signing up, you agree to our{' '}
+          <Link href="/privacy" className="text-blue-600 hover:underline">
+            Privacy Policy
           </Link>
         </p>
       </div>
