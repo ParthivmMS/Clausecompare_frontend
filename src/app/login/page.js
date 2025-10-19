@@ -1,9 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { GoogleLogin } from '@react-oauth/google'
 import Link from 'next/link'
 
 export default function LoginPage() {
@@ -13,6 +12,26 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const { login } = useAuth()
+
+  useEffect(() => {
+    // Load Google Sign-In
+    if (typeof window !== 'undefined' && window.google) {
+      window.google.accounts.id.initialize({
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+        callback: handleGoogleResponse
+      })
+      
+      window.google.accounts.id.renderButton(
+        document.getElementById('googleSignInButton'),
+        { 
+          theme: 'outline', 
+          size: 'large',
+          width: 384,
+          text: 'signin_with'
+        }
+      )
+    }
+  }, [])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -28,20 +47,20 @@ export default function LoginPage() {
     }
   }
 
-  const handleGoogleSuccess = async (credentialResponse) => {
+  const handleGoogleResponse = async (response) => {
     setError('')
     setLoading(true)
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/google`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential: credentialResponse.credential })
+        body: JSON.stringify({ credential: response.credential })
       })
 
-      const data = await response.json()
+      const data = await res.json()
 
-      if (response.ok) {
+      if (res.ok) {
         localStorage.setItem('token', data.token)
         localStorage.setItem('user', JSON.stringify(data.user))
         router.push('/dashboard')
@@ -53,10 +72,6 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleGoogleError = () => {
-    setError('Google sign in was cancelled or failed')
   }
 
   return (
@@ -71,17 +86,7 @@ export default function LoginPage() {
         )}
 
         {/* Google Sign In Button */}
-        <div className="mb-6">
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            useOneTap
-            theme="outline"
-            size="large"
-            width="384"
-            text="signin_with"
-          />
-        </div>
+        <div id="googleSignInButton" className="mb-6 flex justify-center"></div>
 
         <div className="relative mb-6">
           <div className="absolute inset-0 flex items-center">
