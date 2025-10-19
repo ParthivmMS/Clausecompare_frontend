@@ -26,7 +26,6 @@ export default function Navigation() {
             
             <div className="hidden md:flex ml-10 space-x-8">
               {navLinks.map((link) => {
-                // Show blog to everyone, other links only to logged-in users
                 if (!link.auth || user) {
                   return (
                     <Link
@@ -50,9 +49,17 @@ export default function Navigation() {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
-                <span className="text-sm text-gray-600 hidden md:block">
-                  {user.email}
-                </span>
+                {user.profile_picture ? (
+                  <img 
+                    src={user.profile_picture} 
+                    alt="Profile" 
+                    className="w-8 h-8 rounded-full"
+                  />
+                ) : (
+                  <span className="text-sm text-gray-600 hidden md:block">
+                    {user.email}
+                  </span>
+                )}
                 <button
                   onClick={logout}
                   className="text-sm text-gray-600 hover:text-gray-900"
