@@ -248,7 +248,7 @@ export default function FileUploader({ onCompareComplete }) {
 </button>
 
         <p className="text-xs text-gray-500 text-center">
-          🔒 Your files are processed securely and deleted within 24 hours. We never use your contracts for AI training.
+          🔒 Original files deleted within 24 hours. Comparison reports saved to your dashboard—delete them anytime with the 'Delete' button."
         </p>
       </form>
     </div>
