@@ -1,5 +1,4 @@
 import { AuthProvider } from '@/contexts/AuthContext'
-import { GoogleOAuthProvider } from '@react-oauth/google'
 import Navigation from '@/components/navigation'
 import Footer from '@/components/footer'
 import './globals.css'
@@ -29,16 +28,17 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        <script src="https://accounts.google.com/gsi/client" async defer></script>
+      </head>
       <body className="min-h-screen flex flex-col">
-        <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}>
-          <AuthProvider>
-            <Navigation />
-            <main className="flex-grow">
-              {children}
-            </main>
-            <Footer />
-          </AuthProvider>
-        </GoogleOAuthProvider>
+        <AuthProvider>
+          <Navigation />
+          <main className="flex-grow">
+            {children}
+          </main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   )
