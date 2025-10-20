@@ -15,21 +15,35 @@ export default function LoginPage() {
 
   useEffect(() => {
     // Load Google Sign-In
-    if (typeof window !== 'undefined' && window.google) {
-      window.google.accounts.id.initialize({
-        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-        callback: handleGoogleResponse
-      })
-      
-      window.google.accounts.id.renderButton(
-        document.getElementById('googleSignInButton'),
-        { 
-          theme: 'outline', 
-          size: 'large',
-          width: 384,
-          text: 'signin_with'
+    const initializeGoogle = () => {
+      if (typeof window !== 'undefined' && window.google) {
+        window.google.accounts.id.initialize({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+          callback: handleGoogleResponse
+        })
+        
+        window.google.accounts.id.renderButton(
+          document.getElementById('googleSignInButton'),
+          { 
+            theme: 'outline', 
+            size: 'large',
+            width: 384,
+            text: 'signin_with'
+          }
+        )
+      }
+    }
+
+    // Wait for Google script to load
+    if (window.google) {
+      initializeGoogle()
+    } else {
+      const checkGoogle = setInterval(() => {
+        if (window.google) {
+          initializeGoogle()
+          clearInterval(checkGoogle)
         }
-      )
+      }, 100)
     }
   }, [])
 
@@ -40,6 +54,7 @@ export default function LoginPage() {
 
     try {
       await login(email, password)
+      router.push('/dashboard')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -48,6 +63,7 @@ export default function LoginPage() {
   }
 
   const handleGoogleResponse = async (response) => {
+    console.log('Google response received:', response)
     setError('')
     setLoading(true)
 
@@ -59,15 +75,20 @@ export default function LoginPage() {
       })
 
       const data = await res.json()
+      console.log('Backend response:', data)
 
       if (res.ok) {
+        // Store token and user
         localStorage.setItem('token', data.token)
         localStorage.setItem('user', JSON.stringify(data.user))
-        router.push('/dashboard')
+        
+        // Force reload auth context
+        window.location.href = '/dashboard'
       } else {
         setError(data.detail || 'Failed to sign in with Google')
       }
     } catch (err) {
+      console.error('Google auth error:', err)
       setError('Failed to sign in with Google. Please try again.')
     } finally {
       setLoading(false)
@@ -82,6 +103,12 @@ export default function LoginPage() {
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded mb-4">
             {error}
+          </div>
+        )}
+
+        {loading && (
+          <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded mb-4">
+            Signing you in...
           </div>
         )}
 
